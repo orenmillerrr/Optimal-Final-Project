@@ -160,6 +160,19 @@ classdef kalmanFilter < handle
 
         end % update(obj,y)
 
+        function immUpdate(obj,x0,P0)
+            % Get data pertaining to kalmanFilter state estimate
+            %
+            % Inputs:
+            %   obj - kalmanFilter object instance
+            %   x0 - New x_hat for kalmanFilter (IMM)
+            %   P0 - New P for kalmanFilter (IMM)
+
+            obj.x_hat = x0;
+            obj.P = P0;
+        end
+        
+
         function x_hat = getState(obj)
             % Get data pertaining to kalmanFilter state estimate
             %
@@ -195,6 +208,17 @@ classdef kalmanFilter < handle
             Z = obj.Z;
             S = obj.S;
 
+        end
+
+        function [L] = computeLikelihood(obj)
+            % Get data pertaining to kalmanFilter innovation
+            %
+            % Inputs:
+            %   obj - kalmanFilter object instance
+            % Outputs:
+            %   L = Likelihood
+
+            L = 1/sqrt(2*pi)*obj.S^(-1/2) * exp(-.5*obj.Z'*obj.S^-1*obj.Z);
         end
     end
 end
