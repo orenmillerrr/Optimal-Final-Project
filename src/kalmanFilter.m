@@ -1,33 +1,46 @@
+% kalmanFilter Class Definition
+%
+% This class implements a standard linear Kalman filter.
+% It encapsulates the state, covariance, system matrices, and noise parameters.
+% It provides methods for the prediction and update steps.
+
 classdef kalmanFilter < handle
-    %KF Summary of this class goes here
-    %   Detailed explanation goes here
     
     properties
 
-        % System Matrices
-        A
-        B
-        H
+        A       % State Transition Matrix
+        B       % Input Matrix
+        H       % Observation Matrix
+        Q       % Process Noise Covariance Matrix
+        R       % Measurement Noise Covariance Matrix
+        x_hat   % State Estimate Matrix
+        P       % State Estimate Covariance Matrix
 
-        % Noise Matrices
-        Q 
-        R
+        Z       % State Innovation
+        S       % Inovation Covariance
 
-        % State Estimate 
-        x_hat
-        P
+        m       % Number of States
+        n       % Number of Inputs
+        p       % Number of Measurements
 
-        % Dimensions
-        m 
-        n
-        p
 
     end
     
     methods
-        function obj = kalmanFilter(A,B,H,Q,R,x0,P0)
 
-            % ------ Input Validatation -----
+        function obj = kalmanFilter(A,B,H,Q,R,x0,P0)
+            % Construct an instance of this class
+            %
+            % Inputs:
+            %   A  - State transition matrix
+            %   B  - Control input matrix (can be empty [])
+            %   H  - Observation matrix
+            %   Q  - Process noise covariance matrix
+            %   R  - Measurement noise covariance matrix
+            %   x0 - Initial state estimate vector
+            %   P0 - Initial error covariance matrix
+            
+            % ------- Input Validatation ------
             % Inputs
             if nargin < 7
                 error('KalmanFilter:NotEnoughInputs', 'Requires at least 7 input arguments (A, B, H, Q, R, x0, P0).')
@@ -77,14 +90,111 @@ classdef kalmanFilter < handle
                  error('KalmanFilter:InvalidDim', 'Initial covariance P0 must be square (n x n).');
              end
 
+            % ------ Assign properties to object ------
+            obj.A = A;
+            obj.B = B;
+            obj.H = H;
+            obj.Q = Q;
+            obj.R = R;
+            obj.x_hat = x0; % Initial state estimate
+            obj.P = P0;     % Initial error covariance
 
-
-        end
+        end % obj = kalmanFilter(A,B,H,Q,R,x0,P0)
         
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
+        function propagate(obj,u)
+            % Perform the Kalman filter prediction step
+            %
+            % Inputs:
+            %   obj - kalmanFilter object instance
+            %   u   - Control input vector (m x 1), use [] or omit if no 
+            %         control input
+            % ** NOTE: This assumes that control input vector (u) is     **
+            %          deterministic
+
+            % Check control input dimension
+            if obj.m > 0 % If there is a control input
+                if nargin < 2 || isempty(u)
+                    error('KalmanFilter:MissingInput', 'Control input u is required because B is defined.');
+                end
+                if length(u) ~= obj.m || ~iscolumn(u)
+                    error('KalmanFilter:InvalidDim', 'Control input u must be a column vector of size m.');
+                end
+                % Predict state: x_hat_minus = A * x_hat + B * u
+                obj.x_hat = obj.A * obj.x_hat + obj.B * u;
+            else % No control input
+                 if nargin > 1 && ~isempty(u)
+                    warning('KalmanFilter:UnusedInput', 'Control input u provided but B is empty. Ignoring u.');
+                 end
+                % Predict state: x_hat_minus = A * x_hat
+                obj.x_hat = obj.A * obj.x_hat;
+            end
+
+            % Predict error covariance: P_minus = A * P * A' + Q
+            obj.P = obj.A * obj.P * obj.A' + obj.Q;
+
+        end % predict(obj,u)
+
+        function update(obj,y)
+            % Perform the Kalman filter update step
+            %
+            % Inputs:
+            %   obj - kalmanFilter object instance
+            %   y   - Measurement vector (p x 1)
+
+            % Check measurement dimension
+             if length(y) ~= obj.p || ~iscolumn(y)
+                 error('KalmanFilter:InvalidDim', 'Measurement z must be a column vector of size p.');
+             end
+
+            % Calculate Kalman Gain
+            obj.S = obj.H * obj.P * obj.H' + obj.R; % Innovation (or residual) covariance
+            K = (obj.P * obj.H') / obj.S; % More numerically stable than inv(S)
+
+            % Update state estimate
+            obj.Z = y - obj.H * obj.x_hat; % Measurement residual (innovation)
+            obj.x_hat = obj.x_hat + K * obj.Z;
+
+            % Update error covariance: P = (I - K * H) * P_minus
+            I = eye(obj.n); % Identity matrix
+            obj.P = (I - K * obj.H) * obj.P;
+
+        end % update(obj,y)
+
+        function x_hat = getState(obj)
+            % Get data pertaining to kalmanFilter state estimate
+            %
+            % Inputs:
+            %   obj - kalmanFilter object instance
+            % Outputs:
+            %   x_hat - State Estimate
+
+            x_hat = obj.x_hat;
+        end
+
+
+        function P = getCovariance(obj)
+            % Get data pertaining to kalmanFilter covariance
+            %
+            % Inputs:
+            %   obj - kalmanFilter object instance
+            % Outputs:
+            %   P - Covariance
+
+            P = obj.P;
+        end
+
+        function [Z,S] = getInnovation(obj)
+            % Get data pertaining to kalmanFilter innovation
+            %
+            % Inputs:
+            %   obj - kalmanFilter object instance
+            % Outputs:
+            %   Z - Innovation
+            %   S - Innovation Covariance
+
+            Z = obj.Z;
+            S = obj.S;
+
         end
     end
 end
