@@ -168,6 +168,48 @@ for i=1:m
   xe_imm2(i+1,:)=(phi*x_imm2')';
   p_prop_imm2=phi*p_imm2*phi';
  
+% MMAE Likelihood for Filter 1 
+  e_cov_mmae1=h*p_prop_mmae1*h'+r;inv_e_cov_mmae1=inv(e_cov_mmae1);
+  res_mmae1=ym(i,:)'-h*xe_mmae1(i,:)';
+  like_mmae1=1/sqrt(det(2*pi*e_cov_mmae1))*exp(-0.5*res_mmae1'*inv_e_cov_mmae1*res_mmae1); 
+    
+% MMAE Filter 1 Update   
+  gain_mmae1=p_prop_mmae1*h'*inv_e_cov_mmae1;
+  xe_mmae1(i,:)=xe_mmae1(i,:)+(gain_mmae1*res_mmae1)';
+  p_up_mmae1=(eye(6)-gain_mmae1*h)*p_prop_mmae1;
+   
+% MMAE Likelihood for Filter 2 
+  e_cov_mmae2=h*p_prop_mmae2*h'+r;inv_e_cov_mmae2=inv(e_cov_mmae2);
+  res_mmae2=ym(i,:)'-h*xe_mmae2(i,:)';
+  like_mmae2=1/sqrt(det(2*pi*e_cov_mmae2))*exp(-0.5*res_mmae2'*inv_e_cov_mmae2*res_mmae2); 
+
+% MMAE Filter 2 Update    
+  gain_mmae2=p_prop_mmae2*h'*inv_e_cov_mmae2;
+  xe_mmae2(i,:)=xe_mmae2(i,:)+(gain_mmae2*res_mmae2)';
+  p_up_mmae2=(eye(6)-gain_mmae2*h)*p_prop_mmae2;
+   
+% MMAE Likelihood Vector 
+  like_mmae=[like_mmae1;like_mmae2];  
+  
+% Update MMAE Weights  
+  weights_mmae=weights_mmae.*like_mmae;
+  weights_mmae=weights_mmae/sum(weights_mmae);
+  if i < m weights_mmae_store(i+1,:)=weights_mmae'; end
+
+% MMAE Ouputs  
+  xe_mmae(i,:)=weights_mmae(1)*xe_mmae1(i,:)+weights_mmae(2)*xe_mmae2(i,:);
+  p_mmae=(p_up_mmae1+(xe_mmae1(i,:)-xe_mmae(i,:))'*(xe_mmae1(i,:)-xe_mmae(i,:)))*weights_mmae(1)...
+        +(p_up_mmae2+(xe_mmae2(i,:)-xe_mmae(i,:))'*(xe_mmae2(i,:)-xe_mmae(i,:)))*weights_mmae(2);
+  p_mmae_cov(i,:)=diag(p_mmae)';
+
+% MMAE Filter 1 Propagation   
+  xe_mmae1(i+1,:)=(phi*xe_mmae1(i,:)')';
+  p_prop_mmae1=phi*p_up_mmae1*phi'+qd;       
+   
+% MMAE Filter 2 Propagation   
+  xe_mmae2(i+1,:)=(phi*xe_mmae2(i,:)')';
+  p_prop_mmae2=phi*p_up_mmae2*phi';
+ 
 end
 
 % Truncate State and Covariance Storage to m

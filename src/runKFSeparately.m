@@ -4,18 +4,16 @@ load("trajectory_data.mat")
 
 n = length(traj);
 xySigma = 1;
-VxySigma = 1;
+VxySigma = .5;
 axySigma = .1;
-noise = [xySigma*randn([2 n]);
-         VxySigma*randn([2 n]);
-         axySigma*randn([2 n]);];
+noise = [xySigma*randn([1 n]);
+         VxySigma*randn([1 n]);
+         axySigma*randn([1 n]);
+         xySigma*randn([1 n]);
+         VxySigma*randn([1 n]);
+         axySigma*randn([1 n])];
 y = traj + noise';
-y = y(:,[3,4]);
-
-plot(traj(:,1),traj(:,2),".")
-grid on
-hold on
-axis equal
+y = y(:,[2,5]);
 
 tf = 65;
 fs = 100;
@@ -34,7 +32,7 @@ A = [1 dt 0 0;
 H =  [0 1 0 0;
       0 0 0 1];
 
-x0 = [traj(1,1) traj(3,1) traj(2,1) traj(4,1)]';
+x0 = [traj(1,1) traj(1,2) traj(1,3) traj(1,4)]';
 P0 = eye(4);
 
 kf1 = kalmanFilter(A,[],H,Q,R,x0,P0);
@@ -74,6 +72,9 @@ for ii = 1 : length(time)
 
 end
 
+figure
+plot(traj(:,1),traj(:,4))
+hold on
 plot(x1_hat(:,1),x1_hat(:,3),".")
 plot(x2_hat(:,1),x2_hat(:,3),".")
 

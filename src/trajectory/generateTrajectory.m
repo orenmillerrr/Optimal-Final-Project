@@ -153,8 +153,8 @@ for i = 1:length(segments)
 end % End of segments loop
 
 % Save the data to a .mat file
-filename = 'trajectory_data.mat';
-traj = [all_positions,all_velocities,all_accelerations];
+filename = 'D:\Classes\MECH 7710 - Optimal Control\Optimal-Final-Project';
+traj = [all_positions(:,1),all_velocities(:,1),all_accelerations(:,1),all_positions(:,2),all_velocities(:,2),all_accelerations(:,2)];
 save(filename, 'traj');
 
 fprintf('Trajectory data saved to %s\n', filename);

@@ -6,23 +6,20 @@ n = length(traj);
 xySigma = 1;
 VxySigma = .5;
 axySigma = .1;
-noise = [xySigma*randn([2 n]);
-         VxySigma*randn([2 n]);
-         axySigma*randn([2 n]);];
+noise = [xySigma*randn([1 n]);
+         VxySigma*randn([1 n]);
+         axySigma*randn([1 n]);
+         xySigma*randn([1 n]);
+         VxySigma*randn([1 n]);
+         axySigma*randn([1 n])];
 y = traj + noise';
-y = y(:,[3,4]);
-
-plot(traj(:,1),traj(:,2),".")
-grid on
-hold on
-axis equal
+y = y(:,[2,5]);
 
 tf = 65;
 fs = 100;
 dt = 1/fs;
 time = 0 : dt : tf;
 R = diag([VxySigma VxySigma]);
-
 
 %% Kalman Filter 1
 qCV = 400;
@@ -35,7 +32,7 @@ A = [1 dt 0 0;
 H = [0 1 0 0;
      0 0 0 1];
 
-x0 = [traj(1,1) traj(1,3) traj(1,2) traj(1,4)]';
+x0 = [traj(1,1) traj(1,2) traj(1,3) traj(1,4)]';
 P0 = eye(4);
 
 kf1 = kalmanFilter(A,[],H,Q,R,x0,P0);
@@ -137,9 +134,33 @@ for ii = 1 : length(time)
 
 end
 
+%% Plot Trajectory Figures
+% XY Positions
+plot(time,traj(:,1),".")
+grid on
+hold on
+plot(time,traj(:,4),".")
+plot(time,vecnorm([traj(:,1),traj(:,4)]'),"--k")
+
+% XY Velocities
+figure
+plot(time,traj(:,2),".")
+grid on
+hold on
+plot(time,traj(:,5),".")
+plot(time,vecnorm([traj(:,2),traj(:,5)]'),"--k")
+
+% XY Accelerations
+figure
+plot(time,traj(:,3),".")
+grid on
+hold on
+plot(time,traj(:,6),".")
+plot(time,vecnorm([traj(:,3),traj(:,6)]'),"--k")
+
 figure
 hold on
-plot(traj(:,1),traj(:,2))
+plot(traj(:,1),traj(:,4))
 plot(xIMM(:,1),xIMM(:,3))
 
 figure
