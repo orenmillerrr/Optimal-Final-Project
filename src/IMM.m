@@ -1,26 +1,28 @@
 clear;clc;close all
 
-traj = load("trajectory.mat");
-traj = traj.X;
+load("trajectory_data.mat")
 
 n = length(traj);
-xySigma = 5;
+xySigma = 1;
 VxySigma = .5;
-noise = [xySigma*randn([1 n]);
-         xySigma*randn([1 n]);
-         VxySigma*randn([1 n]);
-         VxySigma*randn([1 n])];
-y = traj + noise;
+axySigma = .1;
+noise = [xySigma*randn([2 n]);
+         VxySigma*randn([2 n]);
+         axySigma*randn([2 n]);];
+y = traj + noise';
+y = y(:,[3,4]);
 
+plot(traj(:,1),traj(:,2),".")
 grid on
 hold on
 axis equal
 
-tf = 200;
+tf = 65;
 fs = 100;
 dt = 1/fs;
 time = 0 : dt : tf;
-R = diag([xySigma xySigma VxySigma VxySigma]);
+R = diag([VxySigma VxySigma]);
+
 
 %% Kalman Filter 1
 qCV = 400;
@@ -30,12 +32,10 @@ A = [1 dt 0 0;
       0  1 0 0;
       0  0 1 dt;
       0  0 0  1];
-H = [0 0 0 0;
-      0 1 0 0;
-      0 0 0 0;
-      0 0 0 1];
+H = [0 1 0 0;
+     0 0 0 1];
 
-x0 = traj(:,1);
+x0 = [traj(1,1) traj(1,3) traj(1,2) traj(1,4)]';
 P0 = eye(4);
 
 kf1 = kalmanFilter(A,[],H,Q,R,x0,P0);
@@ -45,79 +45,102 @@ qTURN = 25;
 Q = qCV*dt*[1 0;0 1];
 Q = [Q zeros(2);zeros(2) Q];
 
-w = 0.05;
-A = [1    sin(w*dt)/w   0  -(1-cos(w*dt))/w;
+w = deg2rad(90/5);
+A = [1    sin(w*dt)/w    0  -(1-cos(w*dt))/w;
       0      cos(w*dt)   0        -sin(w*dt);
-      0 (1-cos(w*dt))/w   1      sin(w*dt)/w;
+      0 (1-cos(w*dt))/w  1      sin(w*dt)/w;
       0       sin(w*dt)  0         cos(w*dt)];
 
 kf2 = kalmanFilter(A,[],H,Q,R,x0,P0);
 
 %% IMM Parameters
-M = [0.97 0.03;0.05 0.95];    % Markov Chai
 x{1}  = x0;
 P{1}  = P0;
 x{2}  = x0;
 P{2}  = P0;
-mu = [0.7 0.3];
+M = [0.97 0.03;0.03 0.97];    % Markov Chain
+mu = [0.5 0.5];
 cBar = mu * M;
 numModels = 2;
 
 for ii = 1 : length(time)
-    
-    %% Run Kalman Filter 1
-    % Time Update
-    kf1.propagate
+
+    [Z1,S1] = kf1.computeInnovation(y(ii,:)');
+    [L1] = kf1.computeLikelihood(Z1,S1);
+
+    [Z2,S2] = kf2.computeInnovation(y(ii,:)');
+    [L2] = kf2.computeLikelihood(Z2,S2);
+
+    % IMM Likelyhood
+    likeIMM = [L1 L2];
+
+    % IMM Weights
+    weightsIMM = cBar(ii,:) .* likeIMM;
+    weightsIMM = weightsIMM/sum(weightsIMM);
 
     % Measurement Update
-    kf1.update(y(:,ii))
-
+    kf1.update(y(ii,:)')
     x1_hat(:,ii) = kf1.getState;
     x{1} = x1_hat(:,ii);
     P{1} = kf1.getCovariance;
-    L{1} = kf1.computeLikelihood;
-
-    
-    %% Run Kalman Filter 2
-    % Time Update
-    kf2.propagate
 
     % Measurement Update
-    kf2.update(y(:,ii))
+    kf2.update(y(ii,:)')
 
     x2_hat(:,ii) = kf2.getState;
     x{2} = x2_hat(:,ii);
     P{2} = kf2.getCovariance;
-    L{2} = kf2.computeLikelihood;
 
-    X(:,ii) = (mu * [x{1},x{2}]')';
+    xIMM(ii,:) = weightsIMM(1)*x{1} + weightsIMM(2)*x{2};
+    pIMM = (P{1} + (x{1} -  xIMM(ii,:))'*(x{1} -  xIMM(ii,:)))*weightsIMM(1) + ...
+           (P{2} + (x{2} -  xIMM(ii,:))'*(x{2} -  xIMM(ii,:)))*weightsIMM(2);
 
-    mu = [norm(L{1}*cBar(1)) norm(L{2}*cBar(2))] / sum([norm(L{1}*cBar(1)) norm(L{2}*cBar(2))]);
-    cBar = mu * M;
-    omega = zeros(numModels,numModels);
-    for i = 1 : numModels
-        for j = 1 : numModels
-            omega(i,j) = (M(i,j) * mu(i)) / cBar(j);
-        end
+    % Compute Mixed Initial Conditions
+    cBar1= M(:,1)'*weightsIMM';  
+    if cBar1>1e-80
+        omega(1,1)=M(1,1)*weightsIMM(1)/cBar1;
+        omega(2,1)=M(2,1)*weightsIMM(2)/cBar1;
+    else
+        cBar1 = 0;
+        omega(1,1) = 0;
+        omega(2,1) = 0;
     end
-
-    for j = 1 : numModels
-        xMixed{j} = zeros(size(x{j}));
-        PMixed{j} = zeros(size(P{j}));
-        for i = 1 : numModels
-            xMixed{j} = xMixed{j} + (omega(i,j) * x{j});
-            PMixed{j} = PMixed{j} + (omega(i,j) * (P{j} + (x{j} - xMixed{j})*(x{j} - xMixed{j})'));
-        end
+    cBar2=M(:,2)'*weightsIMM';
+    if cBar2>1e-80
+        omega(1,2)=M(1,2)*weightsIMM(1)/cBar2;
+        omega(2,2)=M(2,2)*weightsIMM(2)/cBar2;
+    else
+        cBar2 = 0;
+        omega(1,2) = 0;
+        omega(2,2) = 0;
     end
+    cBar(ii+1,:)=[cBar1,cBar2]; 
 
-    kf1.immUpdate(x{1},P{1})
-    kf2.immUpdate(x{2},P{2})
+    x1Mixed = omega(1,1)*x{1}+omega(2,1)*x{2};
+    x2Mixed = omega(1,2)*x{1}+omega(2,2)*x{2};
+
+    P1Mixed = (kf1.P + (kf1.x_hat - x1Mixed)'*(kf1.x_hat - x1Mixed))*omega(1,1) + ...
+              (kf2.P + (kf2.x_hat - x2Mixed)'*(kf2.x_hat - x2Mixed))*omega(2,1);
+
+    P2Mixed = (kf1.P + (kf1.x_hat - x1Mixed)'*(kf1.x_hat - x1Mixed))*omega(1,2) + ...
+              (kf2.P + (kf2.x_hat - x2Mixed)'*(kf2.x_hat - x2Mixed))*omega(2,2);
+
+    kf1.x_hat = x1Mixed;
+    kf2.P = P1Mixed;
+
+    kf2.x_hat = x2Mixed;
+    kf2.P = P1Mixed;
+
+    % Time Update
+    kf1.propagate
+    kf2.propagate
 
 end
 
 figure
 hold on
-plot(traj(1,:),traj(3,:))
-plot(x1_hat(1,:),x1_hat(3,:),".")
-plot(x2_hat(1,:),x2_hat(3,:),".")
-plot(X(1,:),X(3,:))
+plot(traj(:,1),traj(:,2))
+plot(xIMM(:,1),xIMM(:,3))
+
+figure
+plot(cBar)

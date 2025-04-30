@@ -210,7 +210,22 @@ classdef kalmanFilter < handle
 
         end
 
-        function [L] = computeLikelihood(obj)
+        function [Z,S] = computeInnovation(obj,y)
+            % Get data pertaining to kalmanFilter innovation
+            %
+            % Inputs:
+            %   obj - kalmanFilter object instance
+            %   y - Measurement
+            % Outputs:
+            %   Z - Innovation
+            %   S - Innovation Covariance
+
+            Z = y - obj.H * obj.x_hat; 
+            S = obj.H * obj.P * obj.H' + obj.R;
+
+        end
+
+        function [L] = computeLikelihood(obj,Z,S)
             % Get data pertaining to kalmanFilter innovation
             %
             % Inputs:
@@ -218,8 +233,10 @@ classdef kalmanFilter < handle
             % Outputs:
             %   L = Likelihood
 
-            L = 1/sqrt(2*pi)*obj.S^(-1/2) * exp(-.5*obj.Z'*obj.S^-1*obj.Z);
+            L = 1/sqrt(det(2*pi*S)) * exp(-.5*Z'*S^-1*Z);
         end
+
+
     end
 end
 
