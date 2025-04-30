@@ -1,6 +1,6 @@
 clear;clc;close all
 
-load("trajectoryData.mat")
+load("trajectory/trajectoryData.mat")
 
 n = length(traj);
 xySigma = 1;
