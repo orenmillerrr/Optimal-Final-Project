@@ -15,7 +15,7 @@ noise = [xySigma*randn([1 n]);
 y = traj + noise';
 y = y(:,[2,5]);
 
-tf = 60;
+tf = 65;
 fs = 100;
 dt = 1/fs;
 time = 0 : dt : tf;
@@ -23,30 +23,34 @@ R = diag([VxySigma VxySigma]);
 
 %% Kalman Filter 1
 qCV = 400;
-Q = qCV*dt*[dt^2/3 dt/2;dt/2 1];
-Q = [Q zeros(2);zeros(2) Q];
-A = [1 dt 0 0;
-     0  1 0 0;
-     0  0 1 dt;
-     0  0 0  1];
-H = [0 1 0 0;
-     0 0 0 1];
+Q = qCV*dt*[dt^2/3 dt/2 0;dt/2 1 0;0 0 0];
+Q = [Q,zeros(3);zeros(3),Q];
+A = [1 dt 0 0  0 0;
+     0  1 0 0  0 0;
+     0  0 0 0  0 0;
+     0  0 0 1 dt 0;
+     0  0 0 0  1 0;
+     0  0 0 0  0 0];
+H = [0 1 0 0 0 0;
+     0 0 0 0 1 0];
 
-x0 = [traj(1,1) traj(1,2) traj(1,3) traj(1,4)]';
-P0 = eye(4);
+x0 = traj(1,:)';
+P0 = eye(6);
 
 kf1 = kalmanFilter(A,[],H,Q,R,x0,P0);
 
 %% Kalman Filter 2
 qTURN = 25;
-Q = qCV*dt*[1 0;0 1];
-Q = [Q zeros(2);zeros(2) Q];
+Q = qCV*dt*eye(3);
+Q = [Q zeros(3);zeros(3) Q];
 
-w = deg2rad(4.5);
-A = [1    sin(w*dt)/w    0  -(1-cos(w*dt))/w;
-      0      cos(w*dt)   0        -sin(w*dt);
-      0 (1-cos(w*dt))/w  1      sin(w*dt)/w;
-      0       sin(w*dt)  0         cos(w*dt)];
+w = deg2rad(90/5);
+A = [1     sin(w*dt)/w  0 0  -(1-cos(w*dt))/w 0 ;
+     0       cos(w*dt)  0 0        -sin(w*dt) 0;
+     0               0  0 0                 0 0;
+     0 (1-cos(w*dt))/w  0 1       sin(w*dt)/w 0;
+     0       sin(w*dt)  0 0         cos(w*dt) 0;
+     0               0  0 0                 0 0;];
 
 kf2 = kalmanFilter(A,[],H,Q,R,x0,P0);
 
@@ -134,41 +138,13 @@ for ii = 1 : length(time)
 
 end
 
-red = [1,0.7,.7,1];
-green = [.63,.87,.7,1];
-yellow = [1,1,.7,1];
-blue = [0.7,0.8,1,.5];
-
 %% Plot Trajectory Figures
 % XY Positions
-figure
 plot(time,traj(:,1),".")
 grid on
 hold on
 plot(time,traj(:,4),".")
 plot(time,vecnorm([traj(:,1),traj(:,4)]'),"--k")
-Yax = ylim;
-Xax = xlim;
-r1 = rectangle("Position",[Xax(1) Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",red);
-uistack(r1, 'bottom')
-r1 = rectangle("Position",[Xax(1)+20 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",yellow);
-uistack(r1, 'bottom')
-r1 = rectangle("Position",[Xax(1)+40 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",green);
-uistack(r1, 'bottom')
-% r1 = rectangle("Position",[Xax(1) Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",red)
-% uistack(r1, 'bottom')
-% r1 = rectangle("Position",[Xax(1)+20 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",yellow)
-% uistack(r1, 'bottom')
-% r1 = rectangle("Position",[Xax(1)+40 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",red)
-% uistack(r1, 'bottom')
-% r1 = rectangle("Position",[Xax(1)+60 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",yellow)
-% uistack(r1, 'bottom')
-% r1 = rectangle("Position",[Xax(1)+80 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",red)
-% uistack(r1, 'bottom')
-% r1 = rectangle("Position",[Xax(1)+100 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",green)
-% uistack(r1, 'bottom')
-
-
 
 % XY Velocities
 figure
@@ -177,14 +153,6 @@ grid on
 hold on
 plot(time,traj(:,5),".")
 plot(time,vecnorm([traj(:,2),traj(:,5)]'),"--k")
-Yax = ylim;
-Xax = xlim;
-r1 = rectangle("Position",[Xax(1) Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",red);
-uistack(r1, 'bottom')
-r1 = rectangle("Position",[Xax(1)+20 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",yellow);
-uistack(r1, 'bottom')
-r1 = rectangle("Position",[Xax(1)+40 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",green);
-uistack(r1, 'bottom')
 
 % XY Accelerations
 figure
@@ -193,14 +161,6 @@ grid on
 hold on
 plot(time,traj(:,6),".")
 plot(time,vecnorm([traj(:,3),traj(:,6)]'),"--k")
-Yax = ylim;
-Xax = xlim;
-r1 = rectangle("Position",[Xax(1) Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",red);
-uistack(r1, 'bottom')
-r1 = rectangle("Position",[Xax(1)+20 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",yellow);
-uistack(r1, 'bottom')
-r1 = rectangle("Position",[Xax(1)+40 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",green);
-uistack(r1, 'bottom')
 
 figure
 hold on
@@ -208,13 +168,4 @@ plot(traj(:,1),traj(:,4))
 plot(xIMM(:,1),xIMM(:,3))
 
 figure
-plot(time,cBar(2:end,:))
-Yax = ylim;
-Xax = xlim;
-r1 = rectangle("Position",[Xax(1) Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",red);
-uistack(r1, 'bottom')
-r1 = rectangle("Position",[Xax(1)+20 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",yellow);
-uistack(r1, 'bottom')
-r1 = rectangle("Position",[Xax(1)+40 Yax(1) 20 Yax(2)-Yax(1)],"FaceColor",green);
-uistack(r1, 'bottom')
-ylim(Yax)
+plot(cBar)

@@ -1,10 +1,10 @@
 clear;clc;close all
 
-load("trajectory_data.mat")
+load("trajectoryData.mat")
 
 n = length(traj);
 xySigma = 1;
-VxySigma = .5;
+VxySigma = 5;
 axySigma = .1;
 noise = [xySigma*randn([1 n]);
          VxySigma*randn([1 n]);

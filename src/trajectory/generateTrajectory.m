@@ -8,14 +8,17 @@ dt = 0.01; % seconds
 % The first segment MUST define 'start_pos'.
 % Subsequent segments' initial conditions are derived from the end of the previous.
 segments = {
-    struct('type', 'CV', 'duration', 10, 'velocity', [100; 0], 'start_pos', [0; 0]); % Start at (0,0), move right at speed 1
-    struct('type', 'CTR', 'duration', 5, 'turnRate', deg2rad(90/5)); % Turn 30 deg/s for 3s (total 90 deg turn), maintain speed 1
-    struct('type', 'CV', 'duration', 10, 'velocity', [0; 100]); % Move at new constant velocity
-    struct('type', 'CTR', 'duration', 5, 'turnRate', deg2rad(90/5)); % Turn 30 deg/s for 3s (total 90 deg turn), maintain speed 1
-    struct('type', 'CV', 'duration', 10, 'velocity', [-100; 0]); % Move at new constant velocity
-    % struct('type', 'CA', 'duration', 10, 'acceleration', [0; -9.8]); % Accelerate upwards
-    % struct('type', 'CV', 'duration', 5, 'velocity', [0.5; 9.8]); % Move at new constant velocity
-    struct('type', 'CTR', 'duration',25, 'turnRate', deg2rad(90/5), 'speed', []); % Turn -20 deg/s for 4s (total -80 deg turn), maintain speed (derived from previous segment)
+    struct('type', 'CV', 'duration', 20, 'velocity', [100; 0], 'start_pos', [0; 0]); % Start at (0,0), move right at speed 1
+    struct('type', 'CTR', 'duration', 20, 'turnRate', deg2rad(4.5)); % Turn 30 deg/s for 3s (total 90 deg turn), maintain speed 1
+    struct('type', 'CA', 'duration', 10, 'acceleration', [9.8; 9.8]); % Accelerate upwards
+    struct('type', 'CA', 'duration', 10, 'acceleration', [-9.8; -9.8]); % Accelerate upwards
+    % struct('type', 'CV', 'duration', 20, 'velocity', [100; 0], 'start_pos', [0; 0]); % Start at (0,0), move right at speed 1
+    % struct('type', 'CTR', 'duration', 20, 'turnRate', deg2rad(4.5)); % Turn 30 deg/s for 3s (total 90 deg turn), maintain speed 1
+    % struct('type', 'CV', 'duration', 20, 'velocity', [0; 100]); % Move at new constant velocity
+    % struct('type', 'CTR', 'duration', 20, 'turnRate', deg2rad(4.5)); % Turn 30 deg/s for 3s (total 90 deg turn), maintain speed 1
+    % struct('type', 'CV', 'duration', 20, 'velocity', [-100; 0]); % Move at new constant velocity
+    % struct('type', 'CA', 'duration', 10, 'acceleration', [9.8; 9.8]); % Accelerate upwards
+    % struct('type', 'CA', 'duration', 10, 'acceleration', [-9.8; -9.8]); % Accelerate upwards
 };
 
 
@@ -153,7 +156,7 @@ for i = 1:length(segments)
 end % End of segments loop
 
 % Save the data to a .mat file
-filename = 'D:\Classes\MECH 7710 - Optimal Control\Optimal-Final-Project';
+filename = 'D:\Classes\MECH 7710 - Optimal Control\Optimal-Final-Project\src\trajectory\trajectoryData.mat';
 traj = [all_positions(:,1),all_velocities(:,1),all_accelerations(:,1),all_positions(:,2),all_velocities(:,2),all_accelerations(:,2)];
 save(filename, 'traj');
 
