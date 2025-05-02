@@ -64,7 +64,7 @@ Qcv = [qp*dt*eye(2)     zeros(2)     zeros(2);
 kfCV = kalmanFilter(Acv,[],H,Qcv,R,x0,P0);
 
 %% Constant Turn Kalman Filter
-w = deg2rad(30);
+w = deg2rad(1);
 Act = [  eye(2) eye(2)*(sin(w*dt)/w) eye(2)*((1-cos(w*dt))/w);
        zeros(2)   eye(2)*(cos(w*dt))     eye(2)*(sin(w*dt)/w);
        zeros(2) eye(2)*(sin(w*dt)/w)        eye(2)*(cos(w*dt));];
@@ -150,28 +150,33 @@ for ii = 1 : length(time)-1
 
 end
 
+fileName = 'D:\Classes\MECH 7710 - Optimal Control\Optimal-Final-Project\src\savedData\IMM_CVCT';
+save(fileName,'Ximm','time')
+red = [1,0.7,.7,1];
+green = [.63,.87,.7,1];
+yellow = [1,1,.7,1];
+blue = [0.7,0.8,1,.5];
+
+% Plot the trajectory
+figure;
+plot(traj(1:10*fs,1),traj(1:10*fs,2), 'Color','r','LineWidth',2);
+hold on 
+grid on;
+plot(traj(10*fs:20*fs,1),traj(10*fs:20*fs,2), 'Color','b','LineWidth',2);
+plot(traj(20*fs:30*fs,1),traj(20*fs:30*fs,2), 'Color','r','LineWidth',2);
+xlabel('X Position');
+ylabel('Y Position');
+legend(["CV" "CT"],"Location","best")
+axis equal;
 
 figure 
-plot(traj(:,1),traj(:,2))
-hold on
-plot(Ximm(1,:),Ximm(2,:))
+subplot 211
+plot(time(2:end),traj(2:end,1)-Ximm(1,:)')
+subplot 212
+plot(time(2:end),traj(2:end,2)-Ximm(2,:)')
 
-figure 
-plot(traj(:,3),traj(:,4))
-hold on
-plot(Ximm(3,:),Ximm(4,:))
-
-% figure 
-% plot(time,traj(:,6))
-% hold on
-% plot(time(2:end),Ximm(6,:))
 
 figure 
 plot(time,mu)
 legend(["CV" "CT"])
 
-% figure
-% plot(time(2:end),te(:,1))
-% hold on
-% plot(time(2:end),te(:,2))
-% plot(time(2:end),te(:,3))

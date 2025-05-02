@@ -249,7 +249,6 @@ save(filename, 'traj');
 % Plot the trajectory
 figure;
 plot(all_positions(:, 1), all_positions(:, 2), '-o');
-title('Composite Trajectory');
 xlabel('X Position');
 ylabel('Y Position');
 grid on;
