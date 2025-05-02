@@ -15,6 +15,7 @@ classdef kalmanFilter < handle
         R       % Measurement Noise Covariance Matrix
         x_hat   % State Estimate Matrix
         P       % State Estimate Covariance Matrix
+        like    % State Likelihood
 
         Z       % State Innovation
         S       % Inovation Covariance
@@ -119,13 +120,13 @@ classdef kalmanFilter < handle
                 if length(u) ~= obj.m || ~iscolumn(u)
                     error('KalmanFilter:InvalidDim', 'Control input u must be a column vector of size m.');
                 end
-                % Predict state: x_hat_minus = A * x_hat + B * u
+                % Predict state: x_hat_minus
                 obj.x_hat = obj.A * obj.x_hat + obj.B * u;
             else % No control input
                  if nargin > 1 && ~isempty(u)
                     warning('KalmanFilter:UnusedInput', 'Control input u provided but B is empty. Ignoring u.');
                  end
-                % Predict state: x_hat_minus = A * x_hat
+                % Predict state: x_hat_minus
                 obj.x_hat = obj.A * obj.x_hat;
             end
 
@@ -154,9 +155,11 @@ classdef kalmanFilter < handle
             obj.Z = y - obj.H * obj.x_hat; % Measurement residual (innovation)
             obj.x_hat = obj.x_hat + K * obj.Z;
 
-            % Update error covariance: P = (I - K * H) * P_minus
-            I = eye(obj.n); % Identity matrix
-            obj.P = (I - K * obj.H) * obj.P;
+            % Update error covariance:
+            obj.P = (eye(obj.n) - K * obj.H) * obj.P;
+
+            % Compute State Likelihood
+             obj.like = 1/sqrt(det(2*pi*obj.S)) * exp(-.5*obj.Z'*obj.S^-1*obj.Z);
 
         end % update(obj,y)
 
