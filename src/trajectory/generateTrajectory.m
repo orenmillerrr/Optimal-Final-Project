@@ -10,11 +10,14 @@ dt = 0.01; % seconds
 segments = {
     struct('type', 'CV', 'duration', 10, 'velocity', [10; 0], 'start_pos', [0; 0]); % Start at (0,0), move right at speed 1 (defined by velocity vector)
     struct('type', 'CTR', 'duration', 10, 'turnRate', deg2rad(30)); % Turn 30 deg/s for 3s (total 90 deg turn), maintain speed 1
-    % struct('type', 'CA', 'duration', 4, 'acceleration', [0; 0.5]); % Accelerate upwards
+    %struct('type', 'CV', 'duration', 30, 'speed', 10)
+    struct('type', 'CA', 'duration', 4, 'acceleration', [5; 5]); 
+    %struct('type', 'CA', 'duration', 10, 'acceleration', [3; 3]);
+    %struct('type', 'CTR', 'duration', 10, 'turnRate', deg2rad(-18));
     % struct('type', 'SINUSOIDAL', 'duration', 6, 'amplitude_vx', 0.2, 'amplitude_vy', 0.5, 'frequency', 0.5); % Sinusoidal velocity variation
     % struct('type', 'CONSTANT_JERK', 'duration', 3, 'jerk', [0.1; -0.2]); % Constant jerk segment
-    struct('type', 'CV', 'duration', 10, 'speed', 10); % Move at new constant speed 1.5, using current heading
-    % struct('type', 'CTR', 'duration', 4, 'turnRate', deg2rad(-20), 'speed', []); % Turn -20 deg/s for 4s (total -80 deg turn), maintain speed (derived from previous segment)
+    %struct('type', 'CV', 'duration', 30, 'speed', 30); % Move at new constant speed 1.5, using current heading
+    %struct('type', 'CTR', 'duration', 10, 'turnRate', deg2rad(-2), 'speed', []); % Turn -20 deg/s for 4s (total -80 deg turn), maintain speed (derived from previous segment)
 };
 
 % Initialize arrays to store data
@@ -242,7 +245,7 @@ for i = 1:length(segments)
 
 end % End of segments loop
 
-filename = 'D:\Classes\MECH 7710 - Optimal Control\Optimal-Final-Project\src\trajectory\trajectoryDataCVCT.mat';
+filename = 'C:\Users\acr0093\Documents\UCAH\Optimal-Final-Project\src\trajectory\trajectoryDataCVCTCA';
 traj = [all_positions,all_velocities,all_accelerations];
 save(filename, 'traj');
 

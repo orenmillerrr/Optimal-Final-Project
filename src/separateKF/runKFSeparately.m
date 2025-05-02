@@ -115,7 +115,7 @@ for ii = 1 : length(time)-1
 
 end
 
-fileName = 'D:\Classes\MECH 7710 - Optimal Control\Optimal-Final-Project\src\savedData\soloKF_CVCT';
+fileName = 'D:\Classes\MECH 7710 - Optimal Control\Optimal-Final-Project\src\savedData\soloKF_CVCTCA';
 save(fileName,'x1_hat','x2_hat','x3_hat')
 
 figure
