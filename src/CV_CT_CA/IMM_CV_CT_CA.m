@@ -1,14 +1,14 @@
 clear;clc;close all
 
-load("trajectoryDataCVCT.mat")
+load("trajectory/trajectoryDataCVCTCA.mat")
 
 n = length(traj);
 xySigma  = .5;
 VxySigma = .1;
-axySigma = .01;
+AxySigma = .01;
 noise = [xySigma*randn([2 n]);
          VxySigma*randn([2 n]);
-         axySigma*randn([2 n])];
+         AxySigma*randn([2 n])];
 meas = traj + noise';
 
 fs = 100;
@@ -17,7 +17,7 @@ dt = 1/fs;
 time = 0 : dt : tf;
 
 %% Kalman Filter Parameters
-type = "PV";
+type = "V";
 switch type
     case "P"
         R = diag([xySigma xySigma])/dt;
@@ -39,7 +39,7 @@ switch type
              0 1 0 0 0 0;
              0 0 1 0 0 0;
              0 0 0 1 0 0];
-        y = meas(:,[1:4]);
+        y = meas(:,1:4);
         x0 = traj(1,:)';
         P0 = eye(6);
     case "PVA"
@@ -56,7 +56,7 @@ Acv = [  eye(2) dt*eye(2) zeros(2);
        zeros(2)  zeros(2) zeros(2);];
 qp = 1;
 qv = 1;
-qa = 1;
+qa = 10;
 Qcv = [qp*dt*eye(2)     zeros(2)     zeros(2);
            zeros(2) qv*dt*eye(2)     zeros(2);
            zeros(2)     zeros(2) qa*dt*eye(2);];
@@ -64,7 +64,7 @@ Qcv = [qp*dt*eye(2)     zeros(2)     zeros(2);
 kfCV = kalmanFilter(Acv,[],H,Qcv,R,x0,P0);
 
 %% Constant Turn Kalman Filter
-w = deg2rad(1);
+w = deg2rad(30);
 Act = [  eye(2) eye(2)*(sin(w*dt)/w) eye(2)*((1-cos(w*dt))/w);
        zeros(2)   eye(2)*(cos(w*dt))     eye(2)*(sin(w*dt)/w);
        zeros(2) eye(2)*(sin(w*dt)/w)        eye(2)*(cos(w*dt));];
@@ -84,6 +84,20 @@ Qct = [qp*dt*eye(2)     zeros(2)     zeros(2);
 
 kfCT = kalmanFilter(Act,[],H,Qct,R,x0,P0);
 
+
+%% Constant Velocity Kalman Filter
+Aca = [eye(2) dt*eye(2) (dt^2)/2*eye(2);
+       zeros(2)    eye(2) dt*eye(2);
+       zeros(2)  zeros(2) eye(2)];
+qp = 1;
+qv = 1;
+qa = 1;
+Qca = [qp*dt*eye(2)     zeros(2)     zeros(2);
+           zeros(2) qv*dt*eye(2)     zeros(2);
+           zeros(2)     zeros(2) qa*dt*eye(2);];
+
+kfCa = kalmanFilter(Aca,[],H,Qca,R,x0,P0);
+
 %% IMM Initialization
 x{1}  = x0;
 P{1}  = P0;
@@ -91,12 +105,13 @@ x{2}  = x0;
 P{2}  = P0;
 x{3}  = x0;
 P{3}  = P0;
-M = [0.980 0.010;
-     0.010 0.980];    % Markov Chain
-mu = [1/2 1/2];
-numModels = 2;
+M = [0.980 0.010 0.010;
+     0.010 0.980 0.010;
+     0.010 0.010 0.980];    % Markov Chain
+mu = [1/3 1/3 1/3];
+numModels = 3;
 
-KF = [kfCV,kfCT];
+KF = [kfCV,kfCT,kfCa];
 
 for ii = 1 : length(time)-1
     
@@ -117,13 +132,21 @@ for ii = 1 : length(time)-1
     end
 
     % Compute Mixed State Estimate for Each Model
-    X0j{1} = w(1,1)*Xj{1} + w(2,1)*Xj{2};
-    X0j{2} = w(1,2)*Xj{1} + w(2,2)*Xj{2};
+    X0j{1} = w(1,1)*Xj{1} + w(2,1)*Xj{2} + w(3,1)*Xj{3};
+    X0j{2} = w(1,2)*Xj{1} + w(2,2)*Xj{2} + w(3,2)*Xj{3};
+    X0j{3} = w(1,3)*Xj{1} + w(2,3)*Xj{2} + w(3,3)*Xj{3};
 
     P0j{1} = (Pj{1} + (Xj{1} - X0j{1})'*(Xj{1} - X0j{1}))*w(1,1) + ...
-             (Pj{2} + (Xj{2} - X0j{2})'*(Xj{2} - X0j{2}))*w(2,1);
+              (Pj{2} + (Xj{2} - X0j{2})'*(Xj{2} - X0j{2}))*w(2,1) + ...
+              (Pj{3} + (Xj{3} - X0j{3})'*(Xj{3} - X0j{3}))*w(3,1);
+
     P0j{2} = (Pj{1} + (Xj{1} - X0j{1})'*(Xj{1} - X0j{1}))*w(1,2) + ...
-             (Pj{2} + (Xj{2} - X0j{2})'*(Xj{2} - X0j{2}))*w(2,2);
+              (Pj{2} + (Xj{2} - X0j{2})'*(Xj{2} - X0j{2}))*w(2,2) + ...
+              (Pj{3} + (Xj{3} - X0j{3})'*(Xj{3} - X0j{3}))*w(3,3);
+
+    P0j{3} = (Pj{1} + (Xj{1} - X0j{1})'*(Xj{1} - X0j{1}))*w(1,3) + ...
+              (Pj{2} + (Xj{2} - X0j{2})'*(Xj{2} - X0j{2}))*w(2,3) + ...
+              (Pj{3} + (Xj{3} - X0j{3})'*(Xj{3} - X0j{3}))*w(3,3);
 
     %% Update Kalman Filters
     kfCV.x_hat = X0j{1};
@@ -132,8 +155,11 @@ for ii = 1 : length(time)-1
     kfCT.x_hat = X0j{2};
     kfCT.propagate
     kfCT.update(y(ii,:)')
+    kfCa.x_hat = X0j{3};
+    kfCa.propagate
+    kfCa.update(y(ii,:)')
 
-    like = [kfCV.like,kfCT.like];
+    like = [kfCV.like,kfCT.like, kfCa.like];
     %% Model Probability Update
     mu(ii+1,:) = like.*cBar / sum(like.*cBar);
 
@@ -144,13 +170,16 @@ for ii = 1 : length(time)-1
 
     %% State Estimation Combination
     Ximm(:,ii) = mu(ii+1,1)*Xj{1} + ...
-                 mu(ii+1,2)*Xj{2};
+                  mu(ii+1,2)*Xj{2} + ...
+                  mu(ii+1,3)*Xj{3};
+
     Pimm{ii} = (Pj{1} + (Xj{1}-Ximm(:,ii))'*(Xj{1}-Ximm(:,ii)))*mu(ii+1,1) + ...
-               (Pj{2} + (Xj{2}-Ximm(:,ii))'*(Xj{2}-Ximm(:,ii)))*mu(ii+1,2);
+                (Pj{2} + (Xj{2}-Ximm(:,ii))'*(Xj{2}-Ximm(:,ii)))*mu(ii+1,2) + ...
+                (Pj{3} + (Xj{3}-Ximm(:,ii))'*(Xj{3}-Ximm(:,ii)))*mu(ii+1,3);
 
 end
 
-fileName = 'D:\Classes\MECH 7710 - Optimal Control\Optimal-Final-Project\src\savedData\IMM_CVCT';
+fileName = 'D:\Classes\MECH 7710 - Optimal Control\Optimal-Final-Project\src\savedDataIMM_CVCTCA';
 save(fileName,'Ximm','time')
 red = [1,0.7,.7,1];
 green = [.63,.87,.7,1];
@@ -162,11 +191,12 @@ figure;
 plot(traj(1:10*fs,1),traj(1:10*fs,2), 'Color','r','LineWidth',2);
 hold on 
 grid on;
-plot(traj(10*fs:20*fs,1),traj(10*fs:20*fs,2), 'Color','b','LineWidth',2);
-plot(traj(20*fs:30*fs,1),traj(20*fs:30*fs,2), 'Color','r','LineWidth',2);
+% plot(traj(10*fs:20*fs,1),traj(10*fs:20*fs,2), 'Color','b','LineWidth',2);
+% plot(traj(20*fs:30*fs,1),traj(20*fs:30*fs,2), 'Color','r','LineWidth',2);
 xlabel('X Position');
 ylabel('Y Position');
 legend(["CV" "CT"],"Location","best")
+plot(Ximm(1,:),Ximm(2,:))
 axis equal;
 
 figure 
@@ -178,5 +208,5 @@ plot(time(2:end),traj(2:end,2)-Ximm(2,:)')
 
 figure 
 plot(time,mu)
-legend(["CV" "CT"])
+legend(["CV" "CT" "CA"])
 
