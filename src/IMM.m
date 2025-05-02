@@ -13,32 +13,33 @@ noise = [xySigma*randn([1 n]);
          VxySigma*randn([1 n]);
          axySigma*randn([1 n])];
 y = traj + noise';
-y = y(:,[2,5]);
+y = y(:,[1,4]);
 
 tf = 60;
 fs = 100;
 dt = 1/fs;
 time = 0 : dt : tf;
-R = diag([VxySigma VxySigma]);
+R = diag([xySigma xySigma])/dt;
 
 %% Kalman Filter 1
-qCV = 400;
+qCV = 1;
 Q = qCV*dt*[dt^2/3 dt/2;dt/2 1];
 Q = [Q zeros(2);zeros(2) Q];
 A = [1 dt 0 0;
      0  1 0 0;
      0  0 1 dt;
      0  0 0  1];
-H = [0 1 0 0;
-     0 0 0 1];
+H = [1 0 0 0;
+     0 0 1 0];
+% H = eye(4)
 
 x0 = [traj(1,1) traj(1,2) traj(1,3) traj(1,4)]';
-P0 = eye(4);
+P0 = eye(4)*10;
 
 kf1 = kalmanFilter(A,[],H,Q,R,x0,P0);
 
 %% Kalman Filter 2
-qTURN = 25;
+qTURN = 1;
 Q = qCV*dt*[1 0;0 1];
 Q = [Q zeros(2);zeros(2) Q];
 
@@ -55,7 +56,8 @@ x{1}  = x0;
 P{1}  = P0;
 x{2}  = x0;
 P{2}  = P0;
-M = [0.97 0.03;0.03 0.97];    % Markov Chain
+M = [0.97 0.03;
+     0.03 0.97];    % Markov Chain
 mu = [0.5 0.5];
 cBar = mu * M;
 numModels = 2;
@@ -123,10 +125,10 @@ for ii = 1 : length(time)
               (kf2.P + (kf2.x_hat - x2Mixed)'*(kf2.x_hat - x2Mixed))*omega(2,2);
 
     kf1.x_hat = x1Mixed;
-    kf2.P = P1Mixed;
+    kf1.P     = P1Mixed;
 
     kf2.x_hat = x2Mixed;
-    kf2.P = P1Mixed;
+    kf2.P     = P2Mixed;
 
     % Time Update
     kf1.propagate
