@@ -64,7 +64,7 @@ Qcv = [qp*dt*eye(2)     zeros(2)     zeros(2);
 kfCV = kalmanFilter(Acv,[],H,Qcv,R,x0,P0);
 
 %% Constant Turn Kalman Filter
-w = deg2rad(1);
+w = deg2rad(30);
 Act = [  eye(2) eye(2)*(sin(w*dt)/w) eye(2)*((1-cos(w*dt))/w);
        zeros(2)   eye(2)*(cos(w*dt))     eye(2)*(sin(w*dt)/w);
        zeros(2) eye(2)*(sin(w*dt)/w)        eye(2)*(cos(w*dt));];
@@ -169,14 +169,16 @@ ylabel('Y Position');
 legend(["CV" "CT"],"Location","best")
 axis equal;
 
-figure 
-subplot 211
-plot(time(2:end),traj(2:end,1)-Ximm(1,:)')
-subplot 212
-plot(time(2:end),traj(2:end,2)-Ximm(2,:)')
+% figure 
+% subplot 211
+% plot(time(2:end),traj(2:end,1)-Ximm(1,:)')
+% subplot 212
+% plot(time(2:end),traj(2:end,2)-Ximm(2,:)')
 
-
 figure 
-plot(time,mu)
+plot(time,mu(:,1),"LineWidth",2,"color","r")
+grid on
+hold on
+plot(time,mu(:,2),"LineWidth",2,"color","b")
 legend(["CV" "CT"])
 

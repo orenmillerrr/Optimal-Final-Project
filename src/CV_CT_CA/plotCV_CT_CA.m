@@ -1,7 +1,7 @@
 clear;clc;close all
 
-% load("soloKF_CVCT.mat");
-% load("IMM_CVCT.mat");
+load("soloKF_CVCTCA.mat");
+load("IMM_CVCTCA.mat");
 load("trajectoryDataCVCTCA.mat");
 
 fs = 100;
