@@ -167,18 +167,16 @@ plot(traj(20*fs:30*fs,1),traj(20*fs:30*fs,2), 'Color','r','LineWidth',2);
 xlabel('X Position');
 ylabel('Y Position');
 legend(["CV" "CT"],"Location","best")
+title("Trajectory")
 axis equal;
-
-% figure 
-% subplot 211
-% plot(time(2:end),traj(2:end,1)-Ximm(1,:)')
-% subplot 212
-% plot(time(2:end),traj(2:end,2)-Ximm(2,:)')
 
 figure 
 plot(time,mu(:,1),"LineWidth",2,"color","r")
 grid on
 hold on
 plot(time,mu(:,2),"LineWidth",2,"color","b")
+xlabel('Time (sec)');
+ylabel('Mode Probability');
+title("Mode Probability")
 legend(["CV" "CT"])
 

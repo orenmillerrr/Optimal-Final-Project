@@ -204,12 +204,14 @@ axis equal;
 % subplot 212
 % plot(time(2:end),traj(2:end,2)-Ximm(2,:)')
 
-
 figure 
 plot(time,mu(:,1),"LineWidth",2,"color","r")
 grid on
 hold on
 plot(time,mu(:,2),"LineWidth",2,"color","b")
 plot(time,mu(:,3),"LineWidth",2,"color","g")
+xlabel('Time (sec)');
+ylabel('Mode Probability');
+title("Mode Probability")
 legend(["CV" "CT" "CA"],"location","best")
 
